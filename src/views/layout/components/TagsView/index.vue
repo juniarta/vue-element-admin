@@ -4,21 +4,23 @@
       <router-link
         v-for="tag in visitedViews"
         ref="tag"
+        :key="tag.path"
         :class="isActive(tag)?'active':''"
         :to="{ path: tag.path, query: tag.query, fullPath: tag.fullPath }"
-        :key="tag.path"
         tag="span"
         class="tags-view-item"
         @click.middle.native="closeSelectedTag(tag)"
-        @contextmenu.prevent.native="openMenu(tag,$event)">
+        @contextmenu.prevent.native="openMenu(tag,$event)"
+      >
         {{ generateTitle(tag.title) }}
         <span v-if="!tag.meta.affix" class="el-icon-close" @click.prevent.stop="closeSelectedTag(tag)" />
       </router-link>
     </scroll-pane>
     <ul v-show="visible" :style="{left:left+'px',top:top+'px'}" class="contextmenu">
       <li @click="refreshSelectedTag(selectedTag)">{{ $t('tagsView.refresh') }}</li>
-      <li v-if="!(selectedTag.meta&&selectedTag.meta.affix)" @click="closeSelectedTag(selectedTag)">{{
-      $t('tagsView.close') }}</li>
+      <li v-if="!(selectedTag.meta&&selectedTag.meta.affix)" @click="closeSelectedTag(selectedTag)">
+        {{ $t('tagsView.close') }}
+      </li>
       <li @click="closeOthersTags">{{ $t('tagsView.closeOthers') }}</li>
       <li @click="closeAllTags(selectedTag)">{{ $t('tagsView.closeAll') }}</li>
     </ul>
@@ -26,7 +28,7 @@
 </template>
 
 <script>
-import ScrollPane from '@/components/ScrollPane'
+import ScrollPane from './ScrollPane'
 import { generateTitle } from '@/utils/i18n'
 import path from 'path'
 
@@ -45,8 +47,8 @@ export default {
     visitedViews() {
       return this.$store.state.tagsView.visitedViews
     },
-    routers() {
-      return this.$store.state.permission.routers
+    routes() {
+      return this.$store.state.permission.routes
     }
   },
   watch: {
@@ -75,8 +77,10 @@ export default {
       let tags = []
       routes.forEach(route => {
         if (route.meta && route.meta.affix) {
+          const tagPath = path.resolve(basePath, route.path)
           tags.push({
-            path: path.resolve(basePath, route.path),
+            fullPath: tagPath,
+            path: tagPath,
             name: route.name,
             meta: { ...route.meta }
           })
@@ -88,11 +92,10 @@ export default {
           }
         }
       })
-
       return tags
     },
     initTags() {
-      const affixTags = this.affixTags = this.filterAffixTags(this.routers)
+      const affixTags = this.affixTags = this.filterAffixTags(this.routes)
       for (const tag of affixTags) {
         // Must have tag name
         if (tag.name) {
@@ -113,12 +116,10 @@ export default {
         for (const tag of tags) {
           if (tag.to.path === this.$route.path) {
             this.$refs.scrollPane.moveToTarget(tag)
-
             // when query is different then update
             if (tag.to.fullPath !== this.$route.fullPath) {
               this.$store.dispatch('updateVisitedView', this.$route)
             }
-
             break
           }
         }
@@ -176,8 +177,8 @@ export default {
       } else {
         this.left = left
       }
-      this.top = e.clientY
 
+      this.top = e.clientY
       this.visible = true
       this.selectedTag = tag
     },

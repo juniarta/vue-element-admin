@@ -91,20 +91,19 @@ export function getQueryObject(url) {
 }
 
 /**
- *get getByteLen
- * @param {Sting} val input value
+ * @param {Sting} input value
  * @returns {number} output value
  */
-export function getByteLen(val) {
-  let len = 0
-  for (let i = 0; i < val.length; i++) {
-    if (val[i].match(/[^\x00-\xff]/gi) != null) {
-      len += 1
-    } else {
-      len += 0.5
-    }
+export function byteLength(str) {
+  // returns the byte length of an utf8 string
+  let s = str.length
+  for (var i = str.length - 1; i >= 0; i--) {
+    const code = str.charCodeAt(i)
+    if (code > 0x7f && code <= 0x7ff) s++
+    else if (code > 0x7ff && code <= 0xffff) s += 2
+    if (code >= 0xDC00 && code <= 0xDFFF) i--
   }
-  return Math.floor(len)
+  return s
 }
 
 export function cleanArray(actual) {
@@ -137,7 +136,8 @@ export function param2Obj(url) {
       decodeURIComponent(search)
         .replace(/"/g, '\\"')
         .replace(/&/g, '","')
-        .replace(/=/g, '":"') +
+        .replace(/=/g, '":"')
+        .replace(/\+/g, ' ') +
       '"}'
   )
 }
@@ -274,7 +274,7 @@ export function debounce(func, wait, immediate) {
  */
 export function deepClone(source) {
   if (!source && typeof source !== 'object') {
-    throw new Error('error arguments', 'shallowClone')
+    throw new Error('error arguments', 'deepClone')
   }
   const targetObj = source.constructor === Array ? [] : {}
   Object.keys(source).forEach(keys => {
